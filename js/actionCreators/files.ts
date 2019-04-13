@@ -33,7 +33,7 @@ import LoadQueue from "../loadQueue";
 
 import { removeAllTracks } from "./playlist";
 import { setPreamp, setEqBand } from "./equalizer";
-import { LoadStyle, Dispatchable, Track, EqfPreset } from "../types";
+import { LoadStyle, Thunk, Track, EqfPreset, SkinData } from "../types";
 
 // Lower is better
 const DURATION_VISIBLE_PRIORITY = 5;
@@ -47,7 +47,7 @@ export function addTracksFromReferences(
   fileReferences: FileList,
   loadStyle: LoadStyle,
   atIndex: number | undefined
-): Dispatchable {
+): Thunk {
   const tracks: Track[] = Array.from(fileReferences).map(file => ({
     blob: file,
     defaultName: file.name,
@@ -61,7 +61,7 @@ export function loadFilesFromReferences(
   fileReferences: FileList,
   loadStyle: LoadStyle = LOAD_STYLE.PLAY,
   atIndex: number | undefined = undefined
-): Dispatchable {
+): Thunk {
   return dispatch => {
     if (fileReferences.length < 1) {
       return;
@@ -81,7 +81,7 @@ export function loadFilesFromReferences(
 
 export function setSkinFromArrayBuffer(
   arrayBuffer: ArrayBuffer | Promise<ArrayBuffer>
-): Dispatchable {
+): Thunk {
   return async (dispatch, getState, { requireJSZip }) => {
     if (!requireJSZip) {
       alert("Webamp has not been configured to support custom skins.");
@@ -99,7 +99,6 @@ export function setSkinFromArrayBuffer(
     }
     try {
       const skinData = await skinParser(arrayBuffer, JSZip);
-      // @ts-ignore TODO: We still need to type skinParser.
       dispatch({
         type: SET_SKIN_DATA,
         data: {
@@ -110,7 +109,7 @@ export function setSkinFromArrayBuffer(
           skinRegion: skinData.region,
           skinGenLetterWidths: skinData.genLetterWidths,
           skinGenExColors: skinData.genExColors,
-        },
+        } as SkinData,
       });
     } catch (e) {
       console.error(e);
@@ -120,9 +119,7 @@ export function setSkinFromArrayBuffer(
   };
 }
 
-export function setSkinFromFileReference(
-  skinFileReference: File
-): Dispatchable {
+export function setSkinFromFileReference(skinFileReference: File): Thunk {
   return async dispatch => {
     dispatch({ type: LOADING });
     const arrayBuffer = await genArrayBufferFromFileReference(
@@ -132,7 +129,7 @@ export function setSkinFromFileReference(
   };
 }
 
-export function setSkinFromUrl(url: string): Dispatchable {
+export function setSkinFromUrl(url: string): Thunk {
   return async dispatch => {
     dispatch({ type: LOADING });
     try {
@@ -152,18 +149,18 @@ export function setSkinFromUrl(url: string): Dispatchable {
 // This function is private, since Winamp consumers can provide means for
 // opening files via other methods. Only use the file type specific
 // versions below, since they can defer to the user-defined behavior.
-function _openFileDialog(accept: string | null): Dispatchable {
+function _openFileDialog(accept: string | null): Thunk {
   return async dispatch => {
     const fileReferences = await promptForFileReferences({ accept });
     dispatch(loadFilesFromReferences(fileReferences));
   };
 }
 
-export function openEqfFileDialog(): Dispatchable {
+export function openEqfFileDialog(): Thunk {
   return _openFileDialog(".eqf");
 }
 
-export function openMediaFileDialog(): Dispatchable {
+export function openMediaFileDialog(): Thunk {
   return _openFileDialog(null);
 }
 
@@ -171,7 +168,7 @@ export function openSkinFileDialog() {
   return _openFileDialog(".zip, .wsz");
 }
 
-export function fetchMediaDuration(url: string, id: number): Dispatchable {
+export function fetchMediaDuration(url: string, id: number): Thunk {
   return (dispatch, getState) => {
     loadQueue.push(
       async () => {
@@ -197,7 +194,7 @@ export function loadMedia(
   e: React.DragEvent<HTMLDivElement>,
   loadStyle: LoadStyle = LOAD_STYLE.NONE,
   atIndex = 0
-): Dispatchable {
+): Thunk {
   const { files } = e.dataTransfer;
   return async (dispatch, getState, { handleTrackDropEvent }) => {
     if (handleTrackDropEvent) {
@@ -216,7 +213,7 @@ export function loadMediaFiles(
   tracks: Track[],
   loadStyle: LoadStyle = LOAD_STYLE.NONE,
   atIndex = 0
-): Dispatchable {
+): Thunk {
   return dispatch => {
     if (loadStyle === LOAD_STYLE.PLAY) {
       // I'm the worst. It just so happens that in every case that we autoPlay,
@@ -234,7 +231,7 @@ export function loadMediaFile(
   track: Track,
   priority: LoadStyle = LOAD_STYLE.NONE,
   atIndex = 0
-): Dispatchable {
+): Thunk {
   return dispatch => {
     const id = Utils.uniqueId();
     const { defaultName, metaData, duration } = track;
@@ -297,7 +294,7 @@ export function loadMediaFile(
   };
 }
 
-function queueFetchingMediaTags(id: number): Dispatchable {
+function queueFetchingMediaTags(id: number): Thunk {
   return (dispatch, getState) => {
     const track = getTracks(getState())[id];
     loadQueue.push(
@@ -312,7 +309,7 @@ function queueFetchingMediaTags(id: number): Dispatchable {
   };
 }
 
-export function fetchMediaTags(file: string | Blob, id: number): Dispatchable {
+export function fetchMediaTags(file: string | Blob, id: number): Thunk {
   return async (dispatch, getState, { requireMusicMetadata }) => {
     dispatch({ type: MEDIA_TAG_REQUEST_INITIALIZED, id });
 
@@ -344,7 +341,7 @@ export function fetchMediaTags(file: string | Blob, id: number): Dispatchable {
   };
 }
 
-export function setEqFromFileReference(fileReference: File): Dispatchable {
+export function setEqFromFileReference(fileReference: File): Thunk {
   return async dispatch => {
     const arrayBuffer = await genArrayBufferFromFileReference(fileReference);
     const eqf = parser(arrayBuffer);
@@ -353,7 +350,7 @@ export function setEqFromFileReference(fileReference: File): Dispatchable {
   };
 }
 
-export function setEqFromObject(preset: EqfPreset): Dispatchable {
+export function setEqFromObject(preset: EqfPreset): Thunk {
   return dispatch => {
     dispatch(setPreamp(Utils.normalizeEqBand(preset.preamp)));
     BANDS.forEach(band => {
@@ -363,7 +360,7 @@ export function setEqFromObject(preset: EqfPreset): Dispatchable {
   };
 }
 
-export function downloadPreset(): Dispatchable {
+export function downloadPreset(): Thunk {
   return (dispatch, getState) => {
     const state = getState();
     const data = getEqfData(state);
@@ -374,7 +371,7 @@ export function downloadPreset(): Dispatchable {
   };
 }
 
-export function downloadHtmlPlaylist(): Dispatchable {
+export function downloadHtmlPlaylist(): Thunk {
   return (dispatch, getState) => {
     const uri = getPlaylistURL(getState());
     Utils.downloadURI(uri, "Winamp Playlist.html");
