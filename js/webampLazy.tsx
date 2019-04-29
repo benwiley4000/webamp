@@ -124,6 +124,7 @@ interface PrivateOptions {
     };
   };
   __butterchurnOptions: ButterchurnOptions;
+  __customMediaClass: typeof Media; // This should have the same interface as Media
 }
 
 // Return a promise that resolves when the store matches a predicate.
@@ -179,6 +180,7 @@ class Winamp {
       requireMusicMetadata,
       handleTrackDropEvent,
       __butterchurnOptions,
+      __customMediaClass,
     } = this.options;
 
     // TODO: Make this much cleaner
@@ -202,7 +204,7 @@ class Winamp {
 
     // TODO: Validate required options
 
-    this.media = new Media();
+    this.media = new (__customMediaClass || Media)();
     this.store = getStore(
       this.media,
       this._actionEmitter,
