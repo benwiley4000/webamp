@@ -1,3 +1,5 @@
+> This repo is a WIP attempt to use [Cassette](https://github.com/benwiley4000/cassette) to replace parts of Webamp's logic, as a demonstration of how Cassette could be used for building a player like Webamp. No guarantee it'll ever get done though! :)
+
 [![Travis](https://img.shields.io/travis/captbaritone/webamp.svg)](https://travis-ci.org/captbaritone/webamp/) [![Codecov](https://img.shields.io/codecov/c/github/captbaritone/webamp.svg)]() [![Discord](https://img.shields.io/discord/434058775012311061.svg)](https://discord.gg/fBTDMqR)
 
 # Webamp
